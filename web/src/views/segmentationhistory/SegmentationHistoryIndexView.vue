@@ -59,10 +59,28 @@
                             </div>
                         </div>
                         <div class="card_info_footer my-2 flex flex-wrap gap-1 items-center">
-                            <el-tag v-for="sequence in get_sequence(index)" :key="sequence.label" class="mx-1"
-                                :type="sequence.type" effect="light">
-                                {{ sequence.label }}
-                            </el-tag>
+                            <div class="seq_tags">
+                                <el-tag v-for="sequence in get_sequence(index)" :key="sequence.label" class="mx-1"
+                                    :type="sequence.type" effect="light">
+                                    {{ sequence.label }}
+                                </el-tag>
+                            </div>
+                            <div class="seg_result">
+                                <el-row class="category">
+                                    <el-col :span="8">
+                                        <el-text class="NCR_ratio">{{ "NCR_ratio: " +
+                                            JSON.parse(history_tasks[index]['segmentation_result'])['NCR_ratio'] }}</el-text>
+                                    </el-col>
+                                    <el-col :span="8">
+                                        <el-text class="ED_ratio">{{ "ED_ratio: " +
+                                            JSON.parse(history_tasks[index]['segmentation_result'])['ED_ratio'] }}</el-text>
+                                    </el-col>
+                                    <el-col :span="8">
+                                        <el-text class="ET_ratio">{{ "ET_ratio: " +
+                                            JSON.parse(history_tasks[index]['segmentation_result'])['ET_ratio'] }}</el-text>
+                                    </el-col>
+                                </el-row>
+                            </div>
                         </div>
                     </el-card>
                 </el-col>
@@ -388,7 +406,7 @@ const get_sequence = (index: number) => {
 }
 
 const get_original_images_path = (index: number) => {
-    return "http://127.0.0.1:5000/" + history_tasks.value[index]['original_images_path'] + "/100.png"
+    return "http://127.0.0.1:5000/" + history_tasks.value[index]['original_images_path'] + '/' + history_tasks.value[index]['sub_files'][Math.floor(Math.random() * 4)].split('.nii')[0] + "/100.png"
 }
 
 const delete_task = (task: any) => {
@@ -664,6 +682,32 @@ const drawRightImage = (sequence: string) => {
     line-height: 14px;
     display: flex;
     align-items: center;
+}
+
+.card_info_footer .seg_tags {
+    display: flex;
+    line-height: 14px;
+    flex-wrap: wrap;
+}
+
+.seg_result {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    margin-top: 8px;
+}
+
+.seg_result .el-text {
+    font-size: 14px;
+    color: #999;
+}
+
+.seg_result .category {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 3px;
+    margin-bottom: 3px;
 }
 
 .show_button {

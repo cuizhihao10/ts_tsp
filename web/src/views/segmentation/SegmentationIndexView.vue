@@ -229,7 +229,7 @@ import type { UploadInstance, UploadProps, UploadUserFile, UploadRawFile } from 
 import { onBeforeUnmount } from 'vue'
 import { upload, test } from '@/api/upload';
 import { modeling } from '@/api/modeling'
-import { seg_history_search, search_autocomplete } from '@/api/history'
+import { seg_history, seg_history_search, search_autocomplete } from '@/api/history'
 // import { useTokenStore } from '@/store/modules/mytoken';
 import useUserInfoStore from '@/store/modules/userInfo';
 // import request from '@/utils/request';
@@ -312,7 +312,7 @@ const classification_result = ref<classific_result>({})
 
 const test1 = async () => {
     // console.log(i++)
-    await search_autocomplete({ userId: userInfoStore.getuserInfo.uid }).then(res => {
+    await seg_history({ userId: userInfoStore.getuserInfo.uid, page_size: 10, page: 1 }).then(res => {
         console.log(res)
     }).catch(err => {
         console.log(err)

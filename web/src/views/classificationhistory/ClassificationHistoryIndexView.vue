@@ -1,75 +1,120 @@
 <template>
-    <div class="main">
-        <el-row>
-            <el-col v-for="(o, index) in history_tasks.length" :key="o" :span="6" :offset="index > 0 ? 1 : 1">
-                <el-card :body-style="{ padding: '10px', width: 'auto', height: '88%' }">
-                    <!-- <span>{{ o }}</span> -->
-                    <el-image :src="get_original_images_path(index)" class="image" fit="fill" />
-                    <div class="card_info_header">
-                        <el-row :gutter="20">
-                            <el-col :span="12">
-                                <span>{{ history_tasks[index]['filename'] }}</span>
-                            </el-col>
-                            <el-col :span="4" :offset="8">
-                                <span>{{ history_tasks[index]['type'] }} </span>
-                            </el-col>
-                        </el-row>
+    <div class="content">
+        <div class="main">
+            <div class="search">
+                <el-autocomplete class="input" v-model="state" :fetch-suggestions="querySearchAsync"
+                    placeholder="Please input taskname or time such as 'Test' or '2021-01-01'" @select="handleSelect"
+                    style="width: 40%;">
+                    <template #prepend>
+                        <el-select v-model="select" placeholder="Select" style="width: 130px; height: 100%;" size="large"
+                            font-size="18px">
+                            <el-option label="Task name" value="task_name" />
+                            <el-option label="Create Time" value="create_time" />
+                        </el-select>
+                    </template>
+                    <template #append>
+                        <el-button type="primary" style="display: flex;" @click="search">
+                            <el-icon style="vertical-align: middle" color="#409EFC">
+                                <Search />
+                            </el-icon>
+                            <span style="vertical-align: middle" font-size="18px"> Search </span>
+                        </el-button>
+                    </template>
+                </el-autocomplete>
+                <span>{{ state }}</span>
+                <el-button class="order_button" type="primary" style="width: 5%; margin-left: 10px; height: 30%;"
+                    @click="SwitchOrder">Reverse order
+                    <div class="iconBox">
+                        <el-icon style="height: 10px" :color='upState ? "black" : ""'>
+                            <CaretTop style="width: 15px; height: 10px; top: 4px" />
+                        </el-icon>
+                        <el-icon style="height: 10px" :color='downState ? "black" : ""'>
+                            <CaretBottom style="width: 15px; height: 10px" />
+                        </el-icon>
                     </div>
-                    <div class="card_info_middle">
-                        <time class="time">{{ history_tasks[index]['classification_time'] }}</time>
-                        <div class="options">
-                            <el-button size="large" dark color="#28ca61" :icon="Search" circle class="show_button"
-                                @click="openDialog(history_tasks[index])"></el-button>
-                            <el-button size="large" dark color="#d64141" :icon="Delete" circle class="delete_button"
-                                @click="delete_task(history_tasks[index])"></el-button>
-                        </div>
-                    </div>
-                    <div class="card_info_footer">
-                        <div class="seq_tags">
-                            <el-tag v-for="sequence in get_sequence(index)" :key="sequence.label" class="mx-1"
-                                :type="sequence.type" effect="light">
-                                {{ sequence.label }}
-                            </el-tag>
-                        </div>
-                        <div class="classification_result">
-                            <el-row class="category">
-                                <el-col :span="8">
-                                    <el-text class="idh_wild">{{ "idh_wild: " +
-                                        JSON.parse(history_tasks[index]['classification_result'])['idh_wild'] }}</el-text>
+                </el-button>
+                <el-button class="reset_button" style="width: 5%; height: 30%; margin-left: 10px;">Reset</el-button>
+            </div>
+            <el-row>
+                <el-col v-for="(o, index) in history_tasks.length" :key="o" :span="6" :offset="index > 0 ? 1 : 1">
+                    <el-card :body-style="{ padding: '10px', width: 'auto', height: '88%' }">
+                        <!-- <span>{{ o }}</span> -->
+                        <el-image :src="get_original_images_path(index)" class="image" fit="fill" />
+                        <div class="card_info_header">
+                            <el-row :gutter="20">
+                                <el-col :span="12">
+                                    <span>{{ history_tasks[index]['filename'] }}</span>
                                 </el-col>
-                                <el-col :span="8">
-                                    <el-text class="idh_mutant">{{ "idh_mutant: " +
-                                        JSON.parse(history_tasks[index]['classification_result'])['idh_mutant'] }}</el-text>
-                                </el-col>
-                                <el-col :span="8">
-                                    <el-text class="1p/19q intac">{{ "1p/19q intac: " +
-                                        JSON.parse(history_tasks[index]['classification_result'])['1p/19q intac'] }}</el-text>
+                                <el-col :span="4" :offset="8">
+                                    <span>{{ history_tasks[index]['type'] }} </span>
                                 </el-col>
                             </el-row>
-                            <div class="category">
-                                <el-col :span="8">
-                                    <el-text class="1p/19q codel">{{ "1p/19q codel: " +
-                                        JSON.parse(history_tasks[index]['classification_result'])['1p/19q codel'] }}</el-text>
-                                </el-col>
-                                <el-col :span="8">
-                                    <el-text class="grade_LGG">{{ "LGG:" +
-                                        JSON.parse(history_tasks[index]['classification_result'])['grade_LGG'] }}</el-text>
-                                </el-col>
-                                <el-col :span="8">
-                                    <el-text class="grade_HGG">{{ "HGG:" +
-                                        JSON.parse(history_tasks[index]['classification_result'])['grade_HGG'] }}</el-text>
-                                </el-col>
+                        </div>
+                        <div class="card_info_middle">
+                            <time class="time">{{ history_tasks[index]['classification_time'] }}</time>
+                            <div class="options">
+                                <el-button size="large" dark color="#28ca61" :icon="Search" circle class="show_button"
+                                    @click="openDialog(history_tasks[index])"></el-button>
+                                <el-button size="large" dark color="#d64141" :icon="Delete" circle class="delete_button"
+                                    @click="delete_task(history_tasks[index])"></el-button>
                             </div>
                         </div>
-                    </div>
-                </el-card>
-            </el-col>
-        </el-row>
+                        <div class="card_info_footer">
+                            <div class="classification_tags">
+                                <el-tag v-for="sequence in get_sequence(index)" :key="sequence.label" class="mx-1"
+                                    :type="sequence.type" effect="light">
+                                    {{ sequence.label }}
+                                </el-tag>
+                            </div>
+                            <div class="classification_result">
+                                <el-row class="category">
+                                    <el-col :span="8">
+                                        <el-text class="idh_wild">{{ "idh_wild: " +
+                                            JSON.parse(history_tasks[index]['classification_result'])['idh_wild']
+                                        }}</el-text>
+                                    </el-col>
+                                    <el-col :span="8">
+                                        <el-text class="idh_mutant">{{ "idh_mutant: " +
+                                            JSON.parse(history_tasks[index]['classification_result'])['idh_mutant']
+                                        }}</el-text>
+                                    </el-col>
+                                    <el-col :span="8">
+                                        <el-text class="1p/19q intac">{{ "1p/19q intac: " +
+                                            JSON.parse(history_tasks[index]['classification_result'])['1p/19q intac']
+                                        }}</el-text>
+                                    </el-col>
+                                </el-row>
+                                <div class="category">
+                                    <el-col :span="8">
+                                        <el-text class="1p/19q codel">{{ "1p/19q codel: " +
+                                            JSON.parse(history_tasks[index]['classification_result'])['1p/19q codel']
+                                        }}</el-text>
+                                    </el-col>
+                                    <el-col :span="8">
+                                        <el-text class="grade_LGG">{{ "LGG:" +
+                                            JSON.parse(history_tasks[index]['classification_result'])['grade_LGG']
+                                        }}</el-text>
+                                    </el-col>
+                                    <el-col :span="8">
+                                        <el-text class="grade_HGG">{{ "HGG:" +
+                                            JSON.parse(history_tasks[index]['classification_result'])['grade_HGG']
+                                        }}</el-text>
+                                    </el-col>
+                                </div>
+                            </div>
+                        </div>
+                    </el-card>
+                </el-col>
+            </el-row>
+        </div>
+
+        <div class="footer">
+            <el-pagination background layout="prev, pager, next, total" @current-change="handleCurrentChange"
+                :page-size="pagination_page_size" :current-page="pagination_page_number" :total="pagination_total" />
+        </div>
     </div>
-    <div class="footer">
-        <el-pagination background layout="prev, pager, next, total" @current-change="handleCurrentChange"
-            :page-size="pagination_page_size" :current-page="pagination_page_number" :total="pagination_total" />
-    </div>
+
+
     <el-dialog claas="ResultModal" v-model="showModalRef" @closed="handleDialogClosed" width="80%" :title="modal_title">
         <el-form class="modal_main" v-loading="fullscreenLoading"
             element-loading-text="Inferring model in progress, please wait..." :element-loading-spinner="svg"
@@ -292,7 +337,7 @@ const get_sequence = (index: number) => {
 }
 
 const get_original_images_path = (index: number) => {
-    return "http://127.0.0.1:5000/" + history_tasks.value[index]['path'] + "/100.png"
+    return "http://127.0.0.1:5000/" + history_tasks.value[index]['original_images_path'] + '/' + history_tasks.value[index]['sub_files'][Math.floor(Math.random() * 4)].split('.nii')[0] + "/100.png"
 }
 
 const delete_task = (task: any) => {
@@ -439,9 +484,19 @@ const drawLeftImage = (sequence: string) => {
 </script>
 
 <style lang="scss" scoped>
+.content {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
 .main {
     width: 90%;
-    height: 98%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
     padding-left: 50px;
 }
 
@@ -453,8 +508,45 @@ const drawLeftImage = (sequence: string) => {
     justify-content: right;
     align-items: center;
     padding-right: 50px;
-
 }
+
+.search {
+    width: 100%;
+    height: 10%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.search {
+    :deep(.el-input__inner) {
+        font-size: 18px;
+        /* 你想要的字体大小 */
+    }
+}
+
+// .order_button:hover {
+//     background: #ecf5ff;
+//     border-color: #c6e2ff;
+//     color: #409eff;
+//     display: flex;
+//     justify-content: center;
+//     align-items: center;
+// }
+
+.order_button .iconBox {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.reset_button {
+    background: #fff;
+    border-color: #cbcbcd;
+    color: #505255;
+}
+
 
 .modal_main {
     height: 89vh;
@@ -498,7 +590,7 @@ const drawLeftImage = (sequence: string) => {
     flex-direction: column;
 }
 
-.card_info_footer .seq_tags {
+.card_info_footer .classification_tags {
     display: flex;
     line-height: 14px;
     flex-wrap: wrap;
@@ -765,4 +857,5 @@ canvas {
     height: 75%;
     margin-top: 0;
     margin-left: 10px;
-}</style>
+}
+</style>
