@@ -54,20 +54,29 @@ def show_segmentation_history():
     page = post_data.get('page')
     page_size = post_data.get('page_size')
     identity = post_data.get("userId")
-    SegmentationFile_page = (SegmentationFile.query.filter_by(author_id=identity)
-                             .order_by(SegmentationFile.segmentation_time.desc())
-                             .paginate(page=page, per_page=page_size))
-    segmentation_task_total = SegmentationFile.query.filter_by(author_id=identity).count()
+    SegmentationFile_page = db.session.query(SegmentationFile, UploadFile.sub_files). \
+        join(UploadFile, SegmentationFile.filename == UploadFile.filename). \
+        filter(SegmentationFile.author_id == identity)
+    SegmentationFile_page = SegmentationFile_page.order_by(SegmentationFile.segmentation_time.desc())
+    segmentation_task_total = SegmentationFile_page.count()
+    SegmentationFile_page = SegmentationFile_page.paginate(page=page, per_page=page_size)
+    # SegmentationFile_page = (SegmentationFile.query.filter_by(author_id=identity)
+    #                          .order_by(SegmentationFile.segmentation_time.desc())
+    #                          .paginate(page=page, per_page=page_size))
     segmentation_history_list = []
     for history in SegmentationFile_page:
-        segmentation_history_list.append({"filename": history.filename, "type": history.type,
-                                          "size": history.size, "path": history.path,
-                                          "original_images_sequence": history.original_images_sequence,
-                                          "original_images_path": history.original_images_path,
-                                          "segmentation_time": history.segmentation_time})
+        sub_files = history[1].split(',')
+        print(sub_files)
+        segmentation_history_list.append({"filename": history[0].filename, "type": history[0].type,
+                                          "size": history[0].size, "path": history[0].path,
+                                          "original_images_sequence": history[0].original_images_sequence,
+                                          "original_images_path": history[0].original_images_path,
+                                          "segmentation_time": history[0].segmentation_time,
+                                          "sub_files": sub_files,
+                                          "segmentation_result": history[0].segmentation_result})
     return jsonify({"code": 200, "msg": "get segmentation history success", "data": {
         "page_list": segmentation_history_list,
-        "total": segmentation_task_total
+        "total": segmentation_task_total,
     }})
 
 
@@ -200,17 +209,27 @@ def show_classification_history():
     page = post_data.get('page')
     page_size = post_data.get('page_size')
     identity = post_data.get("userId")
-    ClassificationFile_page = (ClassificationFile.query.order_by(ClassificationFile.classification_time.desc())
-                               .paginate(page=page, per_page=page_size))
-    classification_task_total = ClassificationFile.query.filter_by(author_id=identity).count()
+    ClassificationFile_page = db.session.query(ClassificationFile, UploadFile.sub_files). \
+        join(UploadFile, ClassificationFile.filename == UploadFile.filename). \
+        filter(ClassificationFile.author_id == identity)
+    ClassificationFile_page = ClassificationFile_page.order_by(ClassificationFile.classification_time.desc())
+    classification_task_total = ClassificationFile_page.count()
+    ClassificationFile_page = ClassificationFile_page.paginate(page=page, per_page=page_size)
+    # ClassificationFile_page = (ClassificationFile.query.filter_by(author_id=identity)
+    #                            .order_by(ClassificationFile.classification_time.desc())
+    #                            .paginate(page=page, per_page=page_size))
+    # classification_task_total = ClassificationFile.query.filter_by(author_id=identity).count()
     classification_history_list = []
     for history in ClassificationFile_page:
-        classification_history_list.append({"filename": history.filename, "type": history.type,
-                                            "size": history.size, "path": history.path,
-                                            "original_images_sequence": history.original_images_sequence,
-                                            "original_images_path": history.original_images_path,
-                                            "classification_time": history.classification_time,
-                                            "classification_result": history.classification_result})
+        sub_files = history[1].split(',')
+        print(sub_files)
+        classification_history_list.append({"filename": history[0].filename, "type": history[0].type,
+                                            "size": history[0].size, "path": history[0].path,
+                                            "original_images_sequence": history[0].original_images_sequence,
+                                            "original_images_path": history[0].original_images_path,
+                                            "classification_time": history[0].classification_time,
+                                            "classification_result": history[0].classification_result,
+                                            "sub_files": sub_files})
     return jsonify({"code": 200,
                     "msg": "get classification history success",
                     "data":
