@@ -471,7 +471,7 @@ const userRegister = async (formEl: FormInstance | undefined) => {
 <style lang="scss" scoped>
 body {
     height: 100%;
-    background-image: url("@/assets/background/bg.png");
+    background-image: url("@/assets/background/bg5.jpg");
     background-attachment: fixed;
     background-position: center;
     background-size: cover;
@@ -529,12 +529,14 @@ body {
     z-index: 2;
     top: 0;
     right: 0;
-    background-image: url("@/assets/background/fg.png");
-    background-size: 90%;
+    background-image: url("@/assets/background/fg(1).png");
+    background-position: center;
+    background-size: cover;
+    background-size: 100%;
 }
 
 .showInfo:hover {
-    background-size: 100%;
+    background-size: 120%;
     background-position: -50px -50px;
 }
 
@@ -757,9 +759,9 @@ body {
     width: 90%;
     height: 18%;
     background-color: #257B5E;
-    border: 1px solid #ffffff;
+    border: 1px;
     font-size: 1.5rem;
-    font-weight: bold;
+    // font-weight: bold;
     letter-spacing: 0.1rem;
     padding: 1.2rem 3rem;
 }

@@ -22,7 +22,7 @@
                     </template>
                 </el-autocomplete>
                 <span>{{ state }}</span>
-                <el-button class="order_button" type="primary" style="width: 5%; margin-left: 10px; height: 30%;"
+                <el-button class="order_button" type="primary" style="width: 8%; margin-left: 10px; height: 32%;"
                     @click="SwitchOrder">Reverse order
                     <div class="iconBox">
                         <el-icon style="height: 10px" :color='upState ? "black" : ""'>
@@ -33,11 +33,11 @@
                         </el-icon>
                     </div>
                 </el-button>
-                <el-button class="reset_button" style="width: 5%; height: 30%; margin-left: 10px;">Reset</el-button>
+                <el-button class="reset_button" style="width: 5%; height: 32%;; margin-left: 10px;">Reset</el-button>
             </div>
-            <el-row>
-                <el-col v-for="(o, index) in history_tasks.length" :key="o" :span="6" :offset="index > 0 ? 1 : 1">
-                    <el-card :body-style="{ padding: '10px', width: 'auto', height: '88%' }">
+            <el-row style="height: 90%; width: 100%;">
+                <el-col v-for="(o, index) in history_tasks.length" :key="o" :span="8" :offset="index > 0 ? 0 : 0">
+                    <el-card :body-style="{ padding: '10px', width: 'auto', height: '85%' }">
                         <!-- <span>{{ o }}</span> -->
                         <el-image :src="get_original_images_path(index)" class="image" fit="fill" />
                         <div class="card_info_header">
@@ -74,19 +74,19 @@
                                         }}</el-text>
                                     </el-col>
                                     <el-col :span="8">
-                                        <el-text class="idh_mutant">{{ "idh_mutant: " +
+                                        <el-text class="idh_mutant">{{ "idh_mut: " +
                                             JSON.parse(history_tasks[index]['classification_result'])['idh_mutant']
                                         }}</el-text>
                                     </el-col>
                                     <el-col :span="8">
-                                        <el-text class="1p/19q intac">{{ "1p/19q intac: " +
+                                        <el-text class="1p/19q intac">{{ "intac: " +
                                             JSON.parse(history_tasks[index]['classification_result'])['1p/19q intac']
                                         }}</el-text>
                                     </el-col>
                                 </el-row>
                                 <div class="category">
                                     <el-col :span="8">
-                                        <el-text class="1p/19q codel">{{ "1p/19q codel: " +
+                                        <el-text class="1p/19q codel">{{ "codel: " +
                                             JSON.parse(history_tasks[index]['classification_result'])['1p/19q codel']
                                         }}</el-text>
                                     </el-col>
@@ -224,6 +224,8 @@ import { inject } from "vue";
 import {
     Delete,
     Search,
+    CaretTop,
+    CaretBottom
 } from '@element-plus/icons-vue'
 import { classification_history, classification_history_detail, classification_history_delete } from '@/api/history'
 import useUserInfoStore from '@/store/modules/userInfo';
@@ -486,7 +488,7 @@ const drawLeftImage = (sequence: string) => {
 <style lang="scss" scoped>
 .content {
     width: 100%;
-    height: 100vh;
+    height: 150vh;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -494,9 +496,10 @@ const drawLeftImage = (sequence: string) => {
 
 .main {
     width: 90%;
-    height: 100%;
+    height: 93%;
     display: flex;
     flex-direction: column;
+    flex-wrap: wrap;
     padding-left: 50px;
 }
 
@@ -534,6 +537,14 @@ const drawLeftImage = (sequence: string) => {
 //     align-items: center;
 // }
 
+.order_button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    font-size: 14px;
+}
+
 .order_button .iconBox {
     display: flex;
     flex-direction: column;
@@ -545,6 +556,13 @@ const drawLeftImage = (sequence: string) => {
     background: #fff;
     border-color: #cbcbcd;
     color: #505255;
+    font-size: 14px
+}
+
+.reset_button:hover {
+    background: #f5f5f5;
+    border-color: #c6e2ff;
+    color: #409eff;
 }
 
 
@@ -767,7 +785,7 @@ canvas {
 
 .result_info .box-card {
     width: 60%;
-    height: 55%;
+    height: 60%;
     justify-content: space-around;
 }
 

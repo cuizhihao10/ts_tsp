@@ -43,7 +43,7 @@ def main(upload_path):
     seg_model = torch.nn.DataParallel(seg_model).cuda()
     IDH_model = torch.nn.DataParallel(IDH_model).cuda()
     dict_model = {'en': model, 'seg': seg_model, 'idh': IDH_model}
-    load_file = Path('inference_model/model_epoch_3.pth')
+    load_file = Path('inference_model/model_epoch_9.pth')
     if os.path.exists(load_file):
         checkpoint = torch.load(load_file)
         dict_model['en'].load_state_dict(checkpoint['en_state_dict'])
@@ -155,6 +155,8 @@ def post_file():
     if UploadFile.query.filter_by(filename=filename).first():
         return jsonify({"code": 500, "msg": "upload failed", "error_message": "Filename already exists"})
     else:
+        if not os.path.exists(config.UPLOAD_FOLDER):
+            os.mkdir(config.UPLOAD_FOLDER)
         os.mkdir(os.path.join(config.UPLOAD_FOLDER, filename))
     for file in files:
         file.save(os.path.join(config.UPLOAD_FOLDER, filename, file.filename))  # 保存文件

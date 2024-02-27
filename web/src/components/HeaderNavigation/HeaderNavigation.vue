@@ -16,7 +16,7 @@
 
         <el-dropdown>
             <span class="el-dropdown-link" >
-                <svg-icon name="头像" width="84px" height="84px" color="white"></svg-icon>
+                <svg-icon name="头像" width="60px" height="60px" color="white"></svg-icon>
                 {{ userInfoStore.getuserInfo.username }}
                 <el-icon class="el-icon--right">
                     <i-ep-arrow-down />

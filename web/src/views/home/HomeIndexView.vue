@@ -1,7 +1,7 @@
 <template>
     <el-row v-if="isRouter">
         <el-col class="task_card">
-            <el-card class="box-card" shadow="hover" :body-style="{ padding: '0px' }" @mouseleave="visible = !visible"
+            <el-card class="box-card" shadow="hover" :body-style="{ padding: '0px', height: '100%'}" @mouseleave="visible = !visible"
                 @mouseenter="visible = !visible">
                 <img src="@/assets/pictures/分割.png" class="image" />
                 <div style="padding: 14px; font-size: 30px;">
@@ -150,7 +150,9 @@ const goPage = (path: string) => {
 }
 
 .image {
-    width: 100%;
+    width: 92%;
     display: block;
+    margin: auto;
+    object-fit: fill;
 }
 </style>

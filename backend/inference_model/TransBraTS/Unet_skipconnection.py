@@ -1,7 +1,7 @@
 import torch.nn as nn
 import torch.nn.functional as F
 import torch
-
+import random
 # adapt from https://github.com/MIC-DKFZ/BraTS2017
 
 
@@ -68,20 +68,34 @@ class EnDown(nn.Module):
 
 
 class Unet(nn.Module):
-    def __init__(self, in_channels=4, base_channels=16, num_classes=4):
+    def __init__(self, in_channels=1, base_channels=16, num_classes=4):
         super(Unet, self).__init__()
+        self.InitConv_vars = nn.Parameter(torch.tensor((1.0, 1.0, 1.0, 1.0),requires_grad=True))
 
-        self.InitConv = InitConv(in_channels=in_channels, out_channels=base_channels, dropout=0.2)
+        self.InitConv_flair = InitConv(in_channels=1, out_channels=base_channels, dropout=0.2)
+        self.InitConv_ce = InitConv(in_channels=1, out_channels=base_channels, dropout=0.2)
+        self.InitConv_t1 = InitConv(in_channels=1, out_channels=base_channels, dropout=0.2)
+        self.InitConv_t2 = InitConv(in_channels=1, out_channels=base_channels, dropout=0.2)
+
         self.EnBlock1 = EnBlock(in_channels=base_channels)
-        self.EnDown1 = EnDown(in_channels=base_channels, out_channels=base_channels*2)
+        self.EnDown1_flair = EnDown(in_channels=base_channels, out_channels=base_channels*2)
+        self.EnDown1_ce = EnDown(in_channels=base_channels, out_channels=base_channels*2)
+        self.EnDown1_t1 = EnDown(in_channels=base_channels, out_channels=base_channels*2)
+        self.EnDown1_t2 = EnDown(in_channels=base_channels, out_channels=base_channels*2)
 
         self.EnBlock2_1 = EnBlock(in_channels=base_channels*2)
         self.EnBlock2_2 = EnBlock(in_channels=base_channels*2)
-        self.EnDown2 = EnDown(in_channels=base_channels*2, out_channels=base_channels*4)
+        self.EnDown2_flair = EnDown(in_channels=base_channels*2, out_channels=base_channels*4)
+        self.EnDown2_ce = EnDown(in_channels=base_channels*2, out_channels=base_channels*4)
+        self.EnDown2_t1 = EnDown(in_channels=base_channels*2, out_channels=base_channels*4)
+        self.EnDown2_t2 = EnDown(in_channels=base_channels*2, out_channels=base_channels*4)
 
         self.EnBlock3_1 = EnBlock(in_channels=base_channels * 4)
         self.EnBlock3_2 = EnBlock(in_channels=base_channels * 4)
-        self.EnDown3 = EnDown(in_channels=base_channels*4, out_channels=base_channels*8)
+        self.EnDown3_flair = EnDown(in_channels=base_channels*4, out_channels=base_channels*8)
+        self.EnDown3_ce = EnDown(in_channels=base_channels*4, out_channels=base_channels*8)
+        self.EnDown3_t1 = EnDown(in_channels=base_channels*4, out_channels=base_channels*8)
+        self.EnDown3_t2 = EnDown(in_channels=base_channels*4, out_channels=base_channels*8)
 
         self.EnBlock4_1 = EnBlock(in_channels=base_channels * 8)
         self.EnBlock4_2 = EnBlock(in_channels=base_channels * 8)
@@ -89,26 +103,109 @@ class Unet(nn.Module):
         self.EnBlock4_4 = EnBlock(in_channels=base_channels * 8)
 
     def forward(self, x):
-        x = self.InitConv(x)       # (1, 16, 128, 128, 128)
+        # print('input.shape:', x.shape)
+        if x.shape[1] == 4:          # todo 后续加上缺失模态的样本，shape[1]!=4
+            # 执行你的代码
+            x_flair = x[:,0,:,:,:]    # 取出某一个序列自动降维
+            x_flair = x_flair.unsqueeze(1)
+            x_ce = x[:,1,:,:,:]
+            x_ce = x_ce.unsqueeze(1)
+            x_t1 = x[:,2,:,:,:]
+            x_t1 = x_t1.unsqueeze(1)
+            x_t2 = x[:,3,:,:,:]
+            x_t2 = x_t2.unsqueeze(1)
+            FLAIR, CE, T1, T2 = True, True, True, True
+        if x.shape[1] == 3:
+            x_flair = x[:,0,:,:,:]
+            x_flair = x_flair.unsqueeze(1)
+            x_ce = x[:,1,:,:,:]
+            x_ce = x_ce.unsqueeze(1)
+            x_t1 = x[:,2,:,:,:]
+            x_t1 = x_t1.unsqueeze(1)    
+            FLAIR, CE, T1, T2 = True, True, True, False
+        if x.shape[1] == 2:
+            x_flair = x[:,0,:,:,:]
+            x_flair = x_flair.unsqueeze(1)
+            x_ce = x[:,1,:,:,:]
+            x_ce = x_ce.unsqueeze(1)
+            FLAIR, CE, T1, T2 = True, True, False, False
+        if x.shape[1] == 1:
+            x_flair = x[:,0,:,:,:]
+            x_flair = x_flair.unsqueeze(1)
+            FLAIR, CE, T1, T2 = True, False, False, False
+        if FLAIR:
+            x_flair = self.InitConv_flair(x_flair)       # (1, 16, 128, 128, 128)
+        if CE:
+            x_ce = self.InitConv_ce(x_ce)
+        if T1:
+            x_t1 = self.InitConv_t1(x_t1)
+        if T2:
+            x_t2 = self.InitConv_t2(x_t2)
+
+        Init_flair_weight = torch.exp(self.InitConv_vars[0]-1) 
+        Init_ce_weight = torch.exp(self.InitConv_vars[1]-1) 
+        Init_t1_weight = torch.exp(self.InitConv_vars[2]-1) 
+        Init_t2_weight = torch.exp(self.InitConv_vars[3]-1) 
+
+        weights_sum = Init_flair_weight + Init_ce_weight + Init_t1_weight + Init_t2_weight
+        weights = [Init_flair_weight, Init_ce_weight, Init_t1_weight, Init_t2_weight]
+
+        # todo test time
+        # Init_flair_weight = 0  # todo缺失flair序列
+        # Init_ce_weight = 0     # todo缺失ce序列
+        # Init_t1_weight = 0     # todo缺失t1序列
+        # Init_t2_weight = 0     # todo缺失t2序列
+        
+        # 对应通道相加，再求平均  shape: (1, 16, 128, 128, 128)
+        if T2:
+            x = (Init_flair_weight* x_flair + Init_ce_weight* x_ce + Init_t1_weight* x_t1 + Init_t2_weight* x_t2) / weights_sum
+        elif T1 and not T2:
+            x = (Init_flair_weight* x_flair + Init_ce_weight* x_ce + Init_t1_weight* x_t1) / (Init_flair_weight + Init_ce_weight + Init_t1_weight)
+        elif CE and not T1 and not T2:
+            x = (Init_flair_weight* x_flair + Init_ce_weight* x_ce) / (Init_flair_weight + Init_ce_weight)
+        elif FLAIR and not CE and not T1 and not T2:
+            x = x_flair
 
         x1_1 = self.EnBlock1(x)
-        x1_2 = self.EnDown1(x1_1)  # (1, 32, 64, 64, 64)
+
+        x1_2_flair = self.EnDown1_flair(x1_1)   # (1, 32, 64, 64, 64)
+
+        x1_2_ce = self.EnDown1_ce(x1_1)
+
+        x1_2_t1 = self.EnDown1_t1(x1_1)
+
+        x1_2_t2 = self.EnDown1_t2(x1_1)
+        
+        x1_2 = (x1_2_flair + x1_2_ce + x1_2_t1 + x1_2_t2) / 4
 
         x2_1 = self.EnBlock2_1(x1_2)
         x2_1 = self.EnBlock2_2(x2_1)
-        x2_2 = self.EnDown2(x2_1)  # (1, 64, 32, 32, 32)
+
+        x2_2_flair = self.EnDown2_flair(x2_1)  # (1, 64, 32, 32, 32)
+
+        x2_2_ce = self.EnDown2_ce(x2_1)
+        x2_2_t1 = self.EnDown2_t1(x2_1)
+        x2_2_t2 = self.EnDown2_t2(x2_1)        
+        x2_2 = (x2_2_flair + x2_2_ce + x2_2_t1 + x2_2_t2) / 4
 
         x3_1 = self.EnBlock3_1(x2_2)
         x3_1 = self.EnBlock3_2(x3_1)
-        x3_2 = self.EnDown3(x3_1)  # (1, 128, 16, 16, 16)
 
+        x3_2_flair = self.EnDown3_flair(x3_1)   # (1, 128, 16, 16, 16)
+        x3_2_ce = self.EnDown3_ce(x3_1)
+
+        x3_2_t1 = self.EnDown3_t1(x3_1)
+
+        x3_2_t2 = self.EnDown3_t2(x3_1)
+
+        x3_2 = (x3_2_flair + x3_2_ce + x3_2_t1 + x3_2_t2) / 4
+        
         x4_1 = self.EnBlock4_1(x3_2)
         x4_2 = self.EnBlock4_2(x4_1)
         x4_3 = self.EnBlock4_3(x4_2)
-
         output = self.EnBlock4_4(x4_3)  # (1, 128, 16, 16, 16)
 
-        return x1_1,x2_1,x3_1,output
+        return x1_1,x2_1,x3_1, output, self.InitConv_vars
 
 
 if __name__ == '__main__':

@@ -5,8 +5,12 @@ import SvgIcon from "./SvgIcon/SvgIcon.vue";
 const allGloalComponent = { SvgIcon };
 export default {
     install(app: { component: (arg0: string, arg1: any) => void; }) {
-        Object.keys(allGloalComponent).forEach(key => {
-            app.component(key, allGloalComponent[key]);
+        Object.keys(allGloalComponent).forEach((key: string) => {
+            if (key in allGloalComponent) {
+              const component = allGloalComponent[key as keyof typeof allGloalComponent];
+              // do something with component
+              app.component(key, component);
+            }
         });
     }
-}
+};

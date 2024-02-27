@@ -72,13 +72,13 @@ import { isCollapse } from '@/store/modules/isCollapse'
 import router from '@/router/index'
 
 const is_active = ref('1');
-const menuActive = router.currentRoute.value.path
+// const menuActive = router.currentRoute.value.path
 
 const goPage = (path: string) => {
     router.push(path)
 }
 
-const handleClick = (key: string, keyPath: string[]) => {
+const handleClick = (key: string) => {
     is_active.value = key;
 }
 

@@ -32,9 +32,9 @@
                 </n-steps>
             </n-space>
         </div>
-        <div class="segmentation_createTask">
+        <!-- <div class="segmentation_createTask">
             <el-button class="btn" type="primary" size="large" @click="test1">Create task</el-button>
-        </div>
+        </div> -->
         <div class="segmentation_createTask_main" v-show="task_status.status === 'uploading'">
             <div class="task">
                 <el-row class="task_name">
@@ -137,7 +137,7 @@
                         <el-card class="classification_result" :body-style="{ height: '50%' }">
                             <template #header>
                                 <div class="info_icon">
-                                    <svg-icon name="结果" width="150px" height="150px"></svg-icon>
+                                    <svg-icon name="结果" width="80px" height="80px"></svg-icon>
                                     <span>Classification Results</span>
                                 </div>
                             </template>
@@ -170,7 +170,7 @@
                                 <span>{{}}</span>
                             </div> -->
                             <div class="info_button">
-                                <el-button size="large" type="primary" @click="table = true">AI Consulting</el-button>
+                                <el-button size="large" type="primary" @click="drawer = true">AI Consulting</el-button>
                             </div>
 
                         </el-card>
@@ -179,7 +179,7 @@
                     <div class="segmentation_result_info">
                         <div class="segmentation_result">
                             <div class="info_icon">
-                                <svg-icon name="结果对比分析" width="150px" height="150px"></svg-icon>
+                                <svg-icon name="结果对比分析" width="80px" height="80px"></svg-icon>
                                 <div claas="info_info">
                                     <span class="info_title">Segmentation Results<br></span>
                                     <span class="info_p">(Proportion of each subregion of tumors)</span>
@@ -203,12 +203,42 @@
                         </div>
                     </div>
                 </div>
-                <el-drawer v-model="table" title="I have a nested table inside!" direction="rtl" size="50%">
-                    <el-table :data="gridData">
-                        <el-table-column property="date" label="Date" width="150" />
-                        <el-table-column property="name" label="Name" width="200" />
-                        <el-table-column property="address" label="Address" />
-                    </el-table>
+                <el-drawer v-model="drawer" size="40%" direction="rtl" :show-close="false">
+                    <template #header="{ close, titleId, titleClass }">
+                        <h4 :id="titleId" :class="titleClass" style="font-size: 1.2rem; color: white">AI Sidebar</h4>
+                        <!-- <el-button type="danger" @click="close" size="default"> -->
+                        <el-icon class="el-icon--left" @click="close" color="white" size="large">
+                            <CircleCloseFilled />
+                        </el-icon>
+
+                        <!-- </el-button> -->
+                    </template>
+                    <div class="chat-container">
+                        <div class="messages">
+                            <div class="message" v-for="message in messages" :key="message.id">
+                                <div class="user-Info"
+                                    :class="{ 'AI-info': message.userId === 'AI', 'user-info': message.userId === 'User1' }">
+                                    <img :src="message.avatarUrl || 'url-to-default-avatar'" class="avatar"
+                                        alt="User Avatar">
+                                    <span class="userId">{{ message.userId }}</span>
+                                </div>
+                                <div class="message-content"
+                                    :class="{ 'message-received': message.type === 'received', 'message-sent': message.type === 'sent' }">
+                                    {{ message.content }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="input-area">
+                            <div class="input-info">
+                                <el-tag class="info-tag" effect="light">Give professional advice
+                                </el-tag>
+                                <el-tag class="info-tag" type="success" effect="light">Prompt diagnosis results
+                                </el-tag>
+                            </div>
+                            <el-input v-model="input" placeholder="Type a message" size="large" @keyup.enter="sendMessage">
+                            </el-input>
+                        </div>
+                    </div>
                 </el-drawer>
             </div>
         </div>
@@ -226,6 +256,7 @@ import {
 import { StepsProps } from 'naive-ui'
 import { genFileId } from 'element-plus'
 import type { UploadInstance, UploadProps, UploadUserFile, UploadRawFile } from 'element-plus'
+import { CircleCloseFilled } from '@element-plus/icons-vue'
 import { onBeforeUnmount } from 'vue'
 import { upload, test } from '@/api/upload';
 import { modeling } from '@/api/modeling'
@@ -234,6 +265,8 @@ import { seg_history, seg_history_search, search_autocomplete } from '@/api/hist
 import useUserInfoStore from '@/store/modules/userInfo';
 // import request from '@/utils/request';
 import dataURLtoBlob from '@/utils/base64Topng';
+import AI_imgSrc from '@/assets/ai/ai_brain.png';
+import User_imgSrc from '@/assets/ai/doctor_img.png';
 
 // const store = useTokenStore()
 const userInfoStore = useUserInfoStore();
@@ -283,6 +316,23 @@ const gridData = [
         address: 'Queens, New York City',
     },
 ]
+
+
+const drawer = ref(false)
+const input = ref('')
+const messages = ref([
+    { id: 1, userId: 'AI', avatarUrl: AI_imgSrc, content: 'Hello', type: 'received' },
+    { id: 2, userId: 'User1', avatarUrl: User_imgSrc, content: 'Hi', type: 'sent' },
+    // ...
+])
+
+const sendMessage = (() => {
+    if (input.value.trim() !== '') {
+        messages.value.push({ id: Date.now(), userId: User_imgSrc, avatarUrl: AI_imgSrc, content: input.value, type: 'sent' });
+        input.value = '';
+    }
+})
+
 
 type ori_pic = {
     [key: string]: string[]
@@ -376,6 +426,7 @@ watch(task_status, async (newVal, oldVal) => {
                     ElMessage.error("Model inference failed!")
                     upload_task_name.value = ''
                     uploadFiles.value!.clearFiles()
+                    current.value = 1
                     task_status.status = 'uploading'
                     fullscreenLoading.value = false
                 }
@@ -384,6 +435,7 @@ watch(task_status, async (newVal, oldVal) => {
                 ElMessage.error("Model inference failed!")
                 upload_task_name.value = ''
                 uploadFiles.value!.clearFiles()
+                current.value = 1
                 task_status.status = 'uploading'
                 fullscreenLoading.value = false
             })
@@ -392,6 +444,7 @@ watch(task_status, async (newVal, oldVal) => {
             ElMessage.error("Model inference failed!")
             upload_task_name.value = ''
             uploadFiles.value!.clearFiles()
+            current.value = 1
             task_status.status = 'uploading'
             fullscreenLoading.value = false
         }
@@ -464,9 +517,11 @@ const submitUpload = async () => {
                     formData.delete('files')
                     formData.delete('task_name')
                     formData.delete('upload_time')
+                    current.value = 2
                     ElMessage.error(res.data.error_message + ",Task creation failed!")
                 }
             }).catch(err => {
+                current.value = 2
                 console.log(err)
             })
         }
@@ -605,6 +660,96 @@ body {
     overflow: hidden;
 }
 
+:deep(.el-drawer .el-drawer__header) {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 20px;
+    background-color: rgb(121, 121, 121);
+    margin-bottom: 0px;
+    height: 6%;
+    // border-radius: 20px
+    // border-top-left-radius: 20px;
+    // border-top-right-radius: 20px;
+}
+
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.messages {
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+.message {
+    display: flex;
+    flex-direction: column;
+}
+
+.user-Info {
+    display: flex;
+    align-items: center;
+}
+
+.AI-info {
+    display: flex;
+    align-self: flex-first;
+}
+
+.user-info {
+    display: flex;
+    align-self: flex-end;
+}
+
+.avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+}
+
+.userId {
+    font-size: 0.8rem;
+    color: #888;
+    margin-left: 10px;
+    font-weight: bold;
+}
+
+.input-area {
+    padding: 10px;
+}
+
+.input-info {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.info-tag {
+    margin-right: 10px;
+    padding: 15px;
+    font-size: 1rem;
+}
+
+.message-content {
+    padding: 10px;
+    margin: 5px;
+    border-radius: 5px;
+}
+
+.message-received {
+    background-color: #eee;
+    align-self: flex-start;
+}
+
+.message-sent {
+    background-color: #0f9d58;
+    color: white;
+    align-self: flex-end;
+}
+
 .segmentation {
     width: 100%;
     height: auto;
@@ -642,7 +787,7 @@ body {
 
 .task .task_name {
     width: 50%;
-    margin-left: 130px;
+    margin-left: 80px;
     margin-bottom: 20px;
 }
 
@@ -881,7 +1026,7 @@ canvas {
 
 .result_content_right .classification_result_info {
     width: 100%;
-    height: 45%;
+    height: 52%;
     margin-top: 20px;
     display: flex;
     align-items: center;
@@ -909,7 +1054,7 @@ canvas {
 }
 
 .classification_result_info .classification_result .info_icon span {
-    font-size: 30px;
+    font-size: 22px;
     font-weight: bold;
 }
 
@@ -920,12 +1065,12 @@ canvas {
 }
 
 .classification_result_info .classification_result .text span:nth-child(1) {
-    font-size: 20px;
+    font-size: 16px;
     margin-right: 10px;
 }
 
 .classification_result_info .classification_result .text span:nth-child(2) {
-    font-size: 20px;
+    font-size: 16px;
     font-weight: 500;
 }
 
@@ -940,7 +1085,7 @@ canvas {
 .classification_result_info .classification_result .info_button .el-button {
     width: 50%;
     height: 100%;
-    margin-top: 70px;
+    margin-top: 50px;
     font-size: 20px;
     font-weight: bold;
     border-radius: 20px;
@@ -995,17 +1140,17 @@ canvas {
 }
 
 .segmentation_result_info .segmentation_result .info_icon .info_title {
-    font-size: 30px;
+    font-size: 22px;
     font-weight: bold;
     display: flex;
-    text-align: center;
+    justify-content: center;
 }
 
 .segmentation_result_info .segmentation_result .info_icon .info_p {
-    font-size: 18px;
+    font-size: 15px;
     font-weight: normal;
     display: flex;
-    text-align: center;
+    justify-content: center;
 }
 
 .segmentation_result_info .segmentation_result .divider {
@@ -1019,7 +1164,7 @@ canvas {
 .segmentation_result_info .segmentation_result .ratio_info {
     width: 93%;
     height: 100%;
-    font-size: 20px;
+    font-size: 16px;
     // font-weight: bold;
     display: flex;
     flex-direction: column;

@@ -244,37 +244,90 @@ class TransformerBraTS(nn.Module):
     def encode(self, x):
         if self.conv_patch_representation:
             # combine embedding with conv patch distribution
-            x1_1, x2_1, x3_1, x4_1, weight_x = self.Unet(x)
+            x1_1, x2_1, x3_1, x4_1 = self.Unet(x)
             x = self.bn(x4_1)
             x = self.relu(x)
             x = self.conv_x(x)
 
             x = x.permute(0, 2, 3, 4, 1).contiguous()
             x = x.view(x.size(0), -1, self.embedding_dim)
-
             # (1, 128, 16, 16, 16)
             # x.shape (N, B, C)
+        else:
+            # TODO: this branch seemed to be meaningless
+            x = self.Unet(x)
+            x = self.bn(x)
+            x = self.relu(x)
+            x = (
+                x.unfold(2, 2, 2)
+                .unfold(3, 2, 2)
+                .unfold(4, 2, 2)
+                .contiguous()
+            )
+            x = x.view(x.size(0), x.size(1), -1, 8)
+            x = x.permute(0, 2, 3, 1).contiguous()
+            x = x.view(x.size(0), -1, self.flatten_dim)
+            x = self.linear_encoding(x)
 
         x = self.position_encoding(x)
         x = self.pe_dropout(x)
 
         # apply transformer
         x, intmd_x = self.transformer(x)
+
         x = self.pre_head_ln(x)
+
         intmd_layers = [1, 2, 3, 4]
+        # assert intmd_layers is not None, "pass the intermediate layers for MLA"
+        # encoder_outputs = {}
+        #all_keys = []
+        # for i in intmd_layers:
+        #     val = str(2 * i - 1)
+        #     _key = 'Z' + str(i)
+        #     all_keys.append(_key)
+        #     encoder_outputs[_key] = intmd_x[val]
+        # all_keys.reverse()
+
+        #x8 = encoder_outputs[all_keys[0]]
+        # x8 = intmd_x['7']
         x8 = self._reshape_output(x)
-        
-        return x1_1, x2_1, x3_1, x4_1, x8, weight_x
+        # print("x8 shape:", x8.shape)
+
+        return x1_1, x2_1, x3_1,x4_1, x8
 
     def decode(self, x):
         # TODO: wrong message, not implemented in child class !!!
         raise NotImplementedError("Should be implemented in child class!!")
 
     def forward(self, x):
-        # todo forward 只需要经过encode即可，decoder独立写
-        x1_1, x2_1, x3_1, x4_1, x8, weight_x = self.encode(x)
-        return x1_1, x2_1, x3_1, x4_1, x8, weight_x
 
+        x1_1, x2_1, x3_1,x4_1, encoder_output = self.encode(x)
+        return x1_1, x2_1, x3_1, x4_1, encoder_output
+        # return x1_1, x2_1, x3_1,x4_1, encoder_output
+        # x1_1 shape: (N,16,128,128,128)
+        # x2_1 shape: (N,32,64,64,64)
+        # x3_1 shape: (N,64,32,32,32)
+        # x4_1 shape: (N, 128, 16, 16, 16)
+        # encoder_output  shape: (N,4096,512)
+        # intmd_encoder_outputs (N,4096,512)*7
+        # y4_1 shape (N, 128, 16, 16, 16)
+
+        # print("intmd_encoder_outputs:",intmd_encoder_outputs)
+        # print("intmd_encoder_outputs['0']:", intmd_encoder_outputs['0'])
+        # y4_1,decoder_output = self.decode(
+        #    x1_1, x2_1, x3_1, encoder_output, intmd_encoder_outputs, auxillary_output_layers)
+        # IDH_out = self.IDH_classifier(x4_1, encoder_output,y4_1)
+        # print("encoder_output:",encoder_output.shape)
+        # if auxillary_output_layers is not None:
+        #    auxillary_outputs = {}
+        #    for i in auxillary_output_layers:
+        #        val = str(2 * i - 1)
+        #        _key = 'Z' + str(i)
+        #        auxillary_outputs[_key] = intmd_encoder_outputs[val]
+        #
+        #    return IDH_out,decoder_output
+        #
+        # return IDH_out,decoder_output
     def get_last_shared_layer(self):
         return self.pre_head_ln
 

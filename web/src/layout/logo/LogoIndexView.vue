@@ -7,7 +7,7 @@
 </template>
 
 <script setup lang='ts'>
-import { isCollapse } from '@/store/modules/isCollapse'
+// import { isCollapse } from '@/store/modules/isCollapse'
 
 </script>
 
